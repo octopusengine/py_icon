@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+"""
+https://github.com/octopusengine/py_icon
+"""
 import pygame
 import numpy as np
 import random
@@ -5,8 +9,12 @@ import random
 __version__ = "0.0.2" # 2023/05
 
 
-# pixel in editor 
+# Size of pixels in the editor
 PIXEL_SIZE = 10
+WHITE = (255, 255, 255)
+SILVER = (128, 128, 128)
+BLACK = (0, 0, 0)
+
 x0, y0 = 30, 30
 icon_w, icon_h = 16, 16 #  32, 32 / 16, 16
 #image_path = f"data_img/icon{icon_w}.bmp"
@@ -14,6 +22,8 @@ image_path = f"data_img/border1.bmp"
 matrix_path = f"data_img/matrix{icon_w}.txt"
 
 my_icon_matrix_load = []
+
+# test matrix
 my_icon_matrix = [
     "1000100110001001",
     "0100010011000100",
@@ -21,25 +31,25 @@ my_icon_matrix = [
     "0001001001100010",
 ]
 
+
 pygame.init()
 
-# Velikost okna
+# Window size
 #window_width, window_height = 16 * PIXEL_SIZE, 16 * PIXEL_SIZE
 window_width, window_height = 640, 480
 window = pygame.display.set_mode((window_width, window_height))
 window.fill((0, 0, 0))
 
-# Inicializace prázdné ikony
+# Initialize an empty icon
 icon_data = np.zeros((icon_w, icon_h), dtype=bool)
 
-
 # font = pygame.font.SysFont(None, 24)
-font = pygame.font.SysFont("Arial", 20)
+font_size = 20
+font = pygame.font.SysFont("Arial", font_size)
 fstep = 23
 text_x = icon_w * PIXEL_SIZE + x0 + PIXEL_SIZE * 2
 
-# Funkce pro vykreslení textu
-def draw_text(text, x, y):
+def draw_text(text, x, y): # Function to draw label/text
     text_surface = font.render(text, True, (0, 128, 0))
     window.blit(text_surface, (x, y))
 
@@ -51,8 +61,17 @@ def draw_status(text, x=30, y=450):
     pygame.display.flip()
 
 
+input_text = ""
+
+def draw_input_field():
+    pygame.draw.rect(window, SILVER, (text_x, y0+fstep*12, 200, 25))
+    pygame.draw.rect(window, BLACK, (text_x, y0+fstep*12, 200, 25), 2)
+    text_surface = font.render(input_text, True, BLACK)
+    window.blit(text_surface, (text_x+5, y0+fstep*12+3))
+
+
 def draw_edit_icon():
-    # window.fill((255, 255, 255))  # Vymazání obsahu okna
+    # window.fill((255, 255, 255))  # Clear the window content
     
     for y in range(icon_w):
         for x in range(icon_h):
@@ -63,54 +82,55 @@ def draw_edit_icon():
 
 
     pygame.draw.rect(window, (0, 128, 255), (x0, y0, icon_w * PIXEL_SIZE, icon_h * PIXEL_SIZE), 2)
-    draw_text("C - Clear",text_x, y0)
-    draw_text("F - Fill", text_x, y0+fstep*1)
-    draw_text("I - Invert",text_x, y0+fstep*2)
-    draw_text("N - Noise",text_x, y0+fstep*3)
-    draw_text("D - Data", text_x, y0+fstep*5)
-    draw_text("M - Matrix",text_x, y0+fstep*6)
-    draw_text("L - Load", text_x, y0+fstep*7)
-    draw_text("S - Save", text_x, y0+fstep*8)
-    draw_text("Q - Quit", text_x, y0+fstep*9)
+    draw_text("CTRL+C - Clear",text_x, y0)
+    draw_text("CTRL+F - Fill", text_x, y0+fstep*1)
+    draw_text("CTRL+I - Invert",text_x, y0+fstep*2)
+    draw_text("CTRL+N - Noise",text_x, y0+fstep*3)
+    draw_text("CTRL+D - Data", text_x, y0+fstep*5)
+    draw_text("CTRL+M - Matrix",text_x, y0+fstep*6)
+    draw_text("CTRL+L - Load", text_x, y0+fstep*7)
+    draw_text("CTRL+S - Save", text_x, y0+fstep*8)
+    draw_text("CTRL+Q - Quit", text_x, y0+fstep*9)
 
     icon_saved = pygame.image.load(image_path)
     window.blit(icon_saved, (text_x, y0+fstep*12))
+    draw_input_field()
 
     pygame.display.flip()
 
 
 def load_icon():
     icon_surface = pygame.image.load(image_path)
-    #  icon_surface = pygame.transform.flip(icon_surface, False, True)  # Horizontální převrácení (pro správnou orientaci)
+    #  icon_surface = pygame.transform.flip(icon_surface, False, True)  # Horizontal flip (for correct orientation)
 
-    # Konverze ikony na pole dat
+    # Convert the icon to a data array
     icon_array = pygame.surfarray.array2d(icon_surface)
     icon_array = np.asarray(icon_array, dtype=np.uint8)
 
-    # Nastavení hodnot v ikoně editoru na základě pole dat
+    # Set the values in the editor icon based on the data array
     for y in range(icon_w):
         for x in range(icon_h):
             icon_data[x][15-y] = True if icon_array[x][y] < 128 else False
 
-    print("Ikona byla úspěšně načtena ze souboru.")
+    print("The icon was successfully loaded from the file.")
 
 
 def save_icon():
-    # Vytvoření prázdného pole pro ikonu
+    # Create an empty array for the icon
     icon_array = np.zeros((icon_w, icon_h), dtype=np.uint8)
 
-    # Nastavení hodnot v poli ikony na základě dat v ikoně editoru
+    # Set the values in the icon array based on the data in the editor icon
     for y in range(icon_w):
         for x in range(icon_h):
-            icon_array[x][y] = 0 if icon_data[x][15-y] else 255  # Horizontální převrácení
+            icon_array[x][y] = 0 if icon_data[x][15-y] else 255  # Horizontal flip
 
-    # Vytvoření povrchu ikony a otáčení o 180 stupňů (hlavou dolu)
+    # Create a surface for the icon and rotate it 180 degrees (upside down)
     icon_surface = pygame.surfarray.make_surface(icon_array)
     #icon_surface = pygame.transform.flip(icon_surface, False, True)
 
-    # Uložení ikony do souboru
+    # Save the icon to a file
     pygame.image.save(icon_surface, image_path)
-    print(f"Ikona byla úspěšně uložena do souboru {image_path}.")
+    print(f"The icon was successfully saved to the file {image_path}.")
 
 
 def clear_icon():
@@ -150,15 +170,15 @@ def matrix_icon():
 
 def data_icon():
     draw_status(f"create and save binary data matrix")
-    # Načtení ikony ze souboru
+    # Load the icon from a file
     icon_surface = pygame.image.load(image_path)
 
-    # Převod ikony na pole dat
+    # Convert the icon to a data array
     icon_array = pygame.surfarray.array2d(icon_surface)
     icon_array = np.asarray(icon_array, dtype=np.uint8)
     
 
-    # Procházení řádků a sloupců ikony
+    # Iterate over rows and columns of the icon
     for y in range(icon_array.shape[1]):
         row = ""
         for x in range(icon_array.shape[0]):
@@ -182,11 +202,11 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Levé tlačítko myši
-                # Získání souřadnic kliknutí
+            if event.button == 1:  # Left mouse button
+                # Get the click coordinates
                 mouse_x, mouse_y = event.pos
 
-                # Převod souřadnic na pozici pixelu v matici
+                # Convert the coordinates to pixel position in the matrix
                 pixel_x = (mouse_x - x0) // PIXEL_SIZE 
                 pixel_y = (mouse_y - y0) // PIXEL_SIZE
                 draw_status(f"x:{pixel_x} | y:{pixel_y} > 1")
@@ -194,14 +214,14 @@ while running:
                 try:
                     icon_data[pixel_x][15-pixel_y] = True
                 except:
-                    print("mimo")    
+                    print("out of range")    
                 draw_edit_icon()
 
-            elif event.button == 3:  # Pravé tlačítko myši
-                # Získání souřadnic kliknutí
+            elif event.button == 3:  # Right mouse button
+                # Get the click coordinates
                 mouse_x, mouse_y = event.pos
 
-                # Převod souřadnic na pozici pixelu v matici
+                # Convert the coordinates to pixel position in the matrix
                 pixel_x = (mouse_x - x0) // PIXEL_SIZE 
                 pixel_y = (mouse_y - y0) // PIXEL_SIZE
                 draw_status(f"x:{pixel_x} | y:{pixel_y} > 0")
@@ -209,28 +229,41 @@ while running:
                 try:
                     icon_data[pixel_x][15-pixel_y] = False
                 except:
-                    print("mimo")
+                    print("out of range")
                 draw_edit_icon()
 
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_l:
+            if event.key == pygame.K_l and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 load_icon()
-            elif event.key == pygame.K_s:
+            elif event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 save_icon()
-            elif event.key == pygame.K_c:
+            #elif event.key == pygame.K_c:
+            elif event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 clear_icon()
-            elif event.key == pygame.K_d: # create save data matrix
+            elif event.key == pygame.K_d and pygame.key.get_mods() & pygame.KMOD_CTRL: # create save data matrix
                 data_icon()               
-            elif event.key == pygame.K_f:
+            elif event.key == pygame.K_f and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 fill_icon()
-            elif event.key == pygame.K_n:
+            elif event.key == pygame.K_n and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 noise_icon()
-            elif event.key == pygame.K_i:
+            elif event.key == pygame.K_i and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 invert_icon()
-            elif event.key == pygame.K_m: # import/load data matrix
+            elif event.key == pygame.K_m and pygame.key.get_mods() & pygame.KMOD_CTRL: # import/load data matrix
                 matrix_icon()
-            elif event.key == pygame.K_q:
+            elif event.key == pygame.K_q and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 running = False
+
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                # after Enter
+                    draw_status(f"input text: {input_text}")
+                    input_text = ""
+                elif event.key == pygame.K_BACKSPACE:
+                    # del last char
+                    input_text = input_text[:-1]
+                else:
+                    # add char
+                    input_text += event.unicode
 
     draw_edit_icon()
 
