@@ -6,7 +6,7 @@ import pygame
 import numpy as np
 import random
 
-__version__ = "0.0.2" # 2023/05
+__version__ = "0.0.3" # 2023/05
 
 
 # Size of pixels in the editor
@@ -37,6 +37,7 @@ pygame.init()
 # Window size
 #window_width, window_height = 16 * PIXEL_SIZE, 16 * PIXEL_SIZE
 window_width, window_height = 640, 480
+resize = 2
 window = pygame.display.set_mode((window_width, window_height))
 window.fill((0, 0, 0))
 
@@ -64,10 +65,10 @@ def draw_status(text, x=30, y=450):
 input_text = ""
 
 def draw_input_field():
-    pygame.draw.rect(window, SILVER, (text_x, y0+fstep*12, 200, 25))
-    pygame.draw.rect(window, BLACK, (text_x, y0+fstep*12, 200, 25), 2)
+    pygame.draw.rect(window, SILVER, (text_x, y0+fstep*15, 200, 25))
+    pygame.draw.rect(window, BLACK, (text_x, y0+fstep*15, 200, 25), 2)
     text_surface = font.render(input_text, True, BLACK)
-    window.blit(text_surface, (text_x+5, y0+fstep*12+3))
+    window.blit(text_surface, (text_x+5, y0+fstep*15+3))
 
 
 def draw_edit_icon():
@@ -82,18 +83,23 @@ def draw_edit_icon():
 
 
     pygame.draw.rect(window, (0, 128, 255), (x0, y0, icon_w * PIXEL_SIZE, icon_h * PIXEL_SIZE), 2)
-    draw_text("CTRL+C - Clear",text_x, y0)
-    draw_text("CTRL+F - Fill", text_x, y0+fstep*1)
-    draw_text("CTRL+I - Invert",text_x, y0+fstep*2)
-    draw_text("CTRL+N - Noise",text_x, y0+fstep*3)
-    draw_text("CTRL+D - Data", text_x, y0+fstep*5)
-    draw_text("CTRL+M - Matrix",text_x, y0+fstep*6)
-    draw_text("CTRL+L - Load", text_x, y0+fstep*7)
-    draw_text("CTRL+S - Save", text_x, y0+fstep*8)
-    draw_text("CTRL+Q - Quit", text_x, y0+fstep*9)
+    draw_text("CTRL+C  -  Clear",text_x, y0)
+    draw_text("CTRL+F  -  Fill", text_x, y0+fstep*1)
+    draw_text("CTRL+I  -  Invert",text_x, y0+fstep*2)
+    draw_text("CTRL+N  -  Noise",text_x, y0+fstep*3)
+    draw_text("CTRL+Z/X - Resize prew.",text_x, y0+fstep*4)
+    draw_text("CTRL+D  -  Data", text_x, y0+fstep*5)
+    draw_text("CTRL+M  -  Matrix",text_x, y0+fstep*6)
+    draw_text("CTRL+L  -  Load", text_x, y0+fstep*7)
+    draw_text("CTRL+S  -  Save", text_x, y0+fstep*8)
+    draw_text("CTRL+Q  -  Quit", text_x, y0+fstep*9)
 
     icon_saved = pygame.image.load(image_path)
+    original_width, original_height = icon_saved.get_size()
+    current_width, current_height = original_width * resize, original_height * resize
     window.blit(icon_saved, (text_x, y0+fstep*12))
+    window.blit(pygame.transform.scale(icon_saved, (current_width, current_height)), (text_x + 50, y0+fstep*12))
+
     draw_input_field()
 
     pygame.display.flip()
@@ -237,6 +243,10 @@ while running:
                 load_icon()
             elif event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 save_icon()
+            elif event.key == pygame.K_z and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                resize += 1
+            elif event.key == pygame.K_x and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                resize -= 1
             #elif event.key == pygame.K_c:
             elif event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 clear_icon()
