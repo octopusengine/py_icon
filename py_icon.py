@@ -6,21 +6,33 @@ import pygame
 import numpy as np
 import random
 
-__version__ = "0.0.3" # 2023/05
+__version__ = "0.1.0" # 2023/06
 
+icon_w, icon_h = 32, 32 #  32,32 / 16,16 / 16,32
+path = "data_img/"
+image_path = f"{path}test{icon_w}x{icon_h}.bmp"
+matrix_path = f"{path}matrix{icon_w}x{icon_h}.txt"
 
 # Size of pixels in the editor
 PIXEL_SIZE = 10
 WHITE = (255, 255, 255)
-SILVER = (128, 128, 128)
-BLACK = (0, 0, 0)
+SILVER = (64, 64, 64)
+SILVER2 = (128, 128, 128)
+BLACK = (8, 8, 8)
+BLACK2 = (0, 0, 0)
+COLOR = (0, 128, 0)
+COLOR2 = (0, 196, 0)
 
-x0, y0 = 30, 30
-icon_w, icon_h = 16, 16 #  32, 32 / 16, 16
-#image_path = f"data_img/icon{icon_w}.bmp"
-image_path = f"data_img/border1.bmp"
-matrix_path = f"data_img/matrix{icon_w}.txt"
+x0, y0 = 30, 50
+window_width, window_height = 720, 480
+#if icon_w > 31:
+#    window_width = 720
 
+xc = window_width/2
+ic = (icon_w * PIXEL_SIZE + x0) // 2
+fstep = 23
+
+input_text = ""
 my_icon_matrix_load = []
 
 # test matrix
@@ -36,46 +48,51 @@ pygame.init()
 
 # Window size
 #window_width, window_height = 16 * PIXEL_SIZE, 16 * PIXEL_SIZE
-window_width, window_height = 640, 480
-resize = 2
+resize = 3
 window = pygame.display.set_mode((window_width, window_height))
+pygame.display.set_caption(f"py_icon (v.{__version__})")
 window.fill((0, 0, 0))
 
 # Initialize an empty icon
 icon_data = np.zeros((icon_w, icon_h), dtype=bool)
-
-# font = pygame.font.SysFont(None, 24)
-font_size = 20
+ 
+font_size = 18
+#font = pygame.font.SysFont(None, font_size)
 font = pygame.font.SysFont("Arial", font_size)
-fstep = 23
-text_x = icon_w * PIXEL_SIZE + x0 + PIXEL_SIZE * 2
 
-def draw_text(text, x, y): # Function to draw label/text
-    text_surface = font.render(text, True, (0, 128, 0))
+def draw_text(text, x, y, col = COLOR): # Function to draw label/text
+    text_surface = font.render(text, True, col)
     window.blit(text_surface, (x, y))
 
 
-def draw_status(text, x=30, y=450):
-    pygame.draw.rect(window, (10, 10, 10), (x-5, y-5, 600, 29))
-    text_surface = font.render(str(text), True, (0, 128, 0))
+def draw_status(text, x=30, y=390):
+    pygame.draw.rect(window, (10, 10, 10), (x-5, y-5, xc-50, 29))
+    text_surface = font.render(str(text), True, COLOR2)
     window.blit(text_surface, (x, y))
     pygame.display.flip()
 
 
-input_text = ""
+def draw_status2(text, x=xc, y=390):
+    pygame.draw.rect(window, (10, 10, 10), (x-5, y-5, xc-50, 29))
+    text_surface = font.render(str(text), True, COLOR2)
+    window.blit(text_surface, (x, y))
+    pygame.display.flip()
+
 
 def draw_input_field():
-    pygame.draw.rect(window, SILVER, (text_x, y0+fstep*15, 200, 25))
-    pygame.draw.rect(window, BLACK, (text_x, y0+fstep*15, 200, 25), 2)
+    draw_text("New filename:",xc, y0+fstep*11, COLOR2)
+    pygame.draw.rect(window, SILVER, (xc, y0+fstep*12, 170, 27))
+    pygame.draw.rect(window, BLACK, (xc, y0+fstep*12, 170, 27), 2)
     text_surface = font.render(input_text, True, BLACK)
-    window.blit(text_surface, (text_x+5, y0+fstep*15+3))
+    window.blit(text_surface, (xc+5, y0+fstep*12+3))
 
 
 def draw_edit_icon():
+    draw_text(f"icon {icon_w}x{icon_h}",x0, y0 -30, SILVER2)
     # window.fill((255, 255, 255))  # Clear the window content
     
-    for y in range(icon_w):
-        for x in range(icon_h):
+    for y in range(icon_h):
+        for x in range(icon_w):
             if icon_data[x][15-y]:
                 pygame.draw.rect(window, (0, 0, 0), (x0 + x * PIXEL_SIZE, y0 + y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE))
             else:
@@ -83,22 +100,35 @@ def draw_edit_icon():
 
 
     pygame.draw.rect(window, (0, 128, 255), (x0, y0, icon_w * PIXEL_SIZE, icon_h * PIXEL_SIZE), 2)
-    draw_text("CTRL+C  -  Clear",text_x, y0)
-    draw_text("CTRL+F  -  Fill", text_x, y0+fstep*1)
-    draw_text("CTRL+I  -  Invert",text_x, y0+fstep*2)
-    draw_text("CTRL+N  -  Noise",text_x, y0+fstep*3)
-    draw_text("CTRL+Z/X - Resize prew.",text_x, y0+fstep*4)
-    draw_text("CTRL+D  -  Data", text_x, y0+fstep*5)
-    draw_text("CTRL+M  -  Matrix",text_x, y0+fstep*6)
-    draw_text("CTRL+L  -  Load", text_x, y0+fstep*7)
-    draw_text("CTRL+S  -  Save", text_x, y0+fstep*8)
-    draw_text("CTRL+Q  -  Quit", text_x, y0+fstep*9)
 
-    icon_saved = pygame.image.load(image_path)
-    original_width, original_height = icon_saved.get_size()
-    current_width, current_height = original_width * resize, original_height * resize
-    window.blit(icon_saved, (text_x, y0+fstep*12))
-    window.blit(pygame.transform.scale(icon_saved, (current_width, current_height)), (text_x + 50, y0+fstep*12))
+
+    rect_width, rect_height = 180, 320
+    pygame.draw.rect(window, BLACK2, (xc-5, y0, rect_width, rect_height))
+    draw_text("CTRL + command:",xc, y0, COLOR2)
+    draw_text("C/F - Clear / Fill",xc, y0+fstep*1)
+    draw_text(".   - ...", xc, y0+fstep*2)
+    draw_text("I   - Invert",xc, y0+fstep*3)
+    draw_text("N   - Noise",xc, y0+fstep*4)
+    draw_text("Z/X - Resize prew.",xc, y0+fstep*5)
+    draw_text("D   -  Data", xc, y0+fstep*6)
+    draw_text("M   -  Matrix",xc, y0+fstep*7)
+    draw_text("L/S -  Load / Save", xc, y0+fstep*8)
+    draw_text("Q   -  Quit", xc, y0+fstep*9)
+
+
+    rect_width = 150
+    pygame.draw.rect(window, SILVER, (window_width-rect_width-x0, y0, rect_width, rect_height))
+    pygame.draw.rect(window, WHITE, (window_width-rect_width-x0, y0, rect_width, 90))
+    pygame.draw.rect(window, BLACK, (window_width-rect_width-x0+75, y0, rect_width/2, 90))
+    try:
+        icon_saved = pygame.image.load(image_path)
+        original_width, original_height = icon_saved.get_size()
+        current_width, current_height = original_width * resize, original_height * resize
+        window.blit(icon_saved, (window_width-rect_width, y0+x0))
+        window.blit(icon_saved, (window_width-rect_width+60, y0+x0))
+        window.blit(pygame.transform.scale(icon_saved, (current_width, current_height)), (window_width-rect_width-10, y0+fstep*5))
+    except:
+        draw_status(f"Err. {image_path}")
 
     draw_input_field()
 
@@ -106,28 +136,33 @@ def draw_edit_icon():
 
 
 def load_icon():
-    icon_surface = pygame.image.load(image_path)
-    #  icon_surface = pygame.transform.flip(icon_surface, False, True)  # Horizontal flip (for correct orientation)
+    draw_status("Load >")
+    draw_status2(f"{image_path}")
+    try:
+        icon_surface = pygame.image.load(image_path)
+        #  icon_surface = pygame.transform.flip(icon_surface, False, True)  # Horizontal flip (for correct orientation)
 
-    # Convert the icon to a data array
-    icon_array = pygame.surfarray.array2d(icon_surface)
-    icon_array = np.asarray(icon_array, dtype=np.uint8)
+        # Convert the icon to a data array
+        icon_array = pygame.surfarray.array2d(icon_surface)
+        icon_array = np.asarray(icon_array, dtype=np.uint8)
 
-    # Set the values in the editor icon based on the data array
-    for y in range(icon_w):
-        for x in range(icon_h):
-            icon_data[x][15-y] = True if icon_array[x][y] < 128 else False
+        # Set the values in the editor icon based on the data array
+        for y in range(icon_h):
+            for x in range(icon_w):
+                icon_data[x][15-y] = True if icon_array[x][y] < 128 else False
 
-    print("The icon was successfully loaded from the file.")
-
+        print("The icon was successfully loaded from the file.")
+    except:
+        draw_status(f"Err. Load {image_path}")
 
 def save_icon():
+    draw_status(f"save")
     # Create an empty array for the icon
     icon_array = np.zeros((icon_w, icon_h), dtype=np.uint8)
 
     # Set the values in the icon array based on the data in the editor icon
-    for y in range(icon_w):
-        for x in range(icon_h):
+    for y in range(icon_h):
+        for x in range(icon_w):
             icon_array[x][y] = 0 if icon_data[x][15-y] else 255  # Horizontal flip
 
     # Create a surface for the icon and rotate it 180 degrees (upside down)
@@ -203,6 +238,8 @@ def data_icon():
 
 # =================== main loop ===============================
 running = True
+draw_status("Start >")
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -241,39 +278,58 @@ while running:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_l and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 load_icon()
+
             elif event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 save_icon()
+
             elif event.key == pygame.K_z and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 resize += 1
+                if resize > 4: 
+                    resize = 4
+                draw_status2(f"zoom {resize}")
+
             elif event.key == pygame.K_x and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 resize -= 1
+                if resize == 0: 
+                    resize = 1
+                draw_status2(f"zoom {resize}")
+
             #elif event.key == pygame.K_c:
             elif event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 clear_icon()
+
             elif event.key == pygame.K_d and pygame.key.get_mods() & pygame.KMOD_CTRL: # create save data matrix
-                data_icon()               
+                data_icon()
+
             elif event.key == pygame.K_f and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 fill_icon()
+
             elif event.key == pygame.K_n and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 noise_icon()
+
             elif event.key == pygame.K_i and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 invert_icon()
+
             elif event.key == pygame.K_m and pygame.key.get_mods() & pygame.KMOD_CTRL: # import/load data matrix
                 matrix_icon()
+
             elif event.key == pygame.K_q and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 running = False
-
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
+   
+            elif event.key == pygame.K_RETURN:
                 # after Enter
-                    draw_status(f"input text: {input_text}")
-                    input_text = ""
-                elif event.key == pygame.K_BACKSPACE:
-                    # del last char
-                    input_text = input_text[:-1]
-                else:
-                    # add char
-                    input_text += event.unicode
+                draw_status(f"input text: {input_text}")
+                if len(input_text)>2:
+                    new_file = f"{path}{input_text}{icon_w}x{icon_h}.bmp"
+                    draw_status2(new_file)
+                    image_path = new_file
+                input_text = ""
+            elif event.key == pygame.K_BACKSPACE:
+                # del last char
+                input_text = input_text[:-1]
+            else:
+                # add char
+                input_text += event.unicode
 
     draw_edit_icon()
 
