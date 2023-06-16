@@ -6,13 +6,17 @@ import os
 import pygame
 import numpy as np
 import random
+from datetime import datetime
 
-__version__ = "0.1.2" # 2023/06
+__version__ = "0.1.5" # 2023/06
 
+DEBUG = True
+fdatetime = True # False
 icon_w, icon_h = 32, 32 #  32,32 / 16,16 / 16,32
 path = "data_img/"
 image_path = f"{path}test_{icon_w}.bmp"
 matrix_path = f"{path}matrix{icon_w}.txt"
+text_import = f"{path}octopus.txt"
 
 # Size of pixels in the editor
 PIXEL_SIZE = 10
@@ -32,42 +36,26 @@ window_width, window_height = 720, 480
 xc = window_width/2
 ic = (icon_w * PIXEL_SIZE + x0) // 2
 fstep = 23
-
+resize = 3
 input_text = ""
 mode = 1
 my_icon_matrix_load = []
 
 # test matrix
 my_icon_matrix = [
-    "10000000000000010000000000000001",
-    "01000000000000010000000000000010",
-    "00100000000000010000000000000100",
-    "00010000000000010000000000001000",
-    "00001000000000010000000000010000",
-    "00000100000000010000000000100000",
-    "00000100000000000000000000100000",
-    "00001000000000000000000000010000",
-    "00010000000000000000000000001000",
-    "00100000000000000000000000000100",
-    "01000000000000000000000000000010",
-    "01000000000000010000000000000010",
-    "00100000000000010000000000000100",
-    "00010000000000010000000000001000",
-    "00001000000000010000000000010000",
-    "00000100000000010000000000100000",
-    "00000100000000000000000000100000",
-    "00001000000000000000000000010000",
-    "00010000000000000000000000001000",
-    "00100000000000000000000000000100",
-    "01000000000000000000000000000010",
-    "10000000000000000000000000000001",
+"10000000000000010000000000000001",
+"01000000000000010000000000000010",
+"00100000000000010000000000000100",
+"00010000000000010000000000001000",
+"00001000000000010000000000010000",
 ]
+# ...
+
 
 pygame.init()
 
 # Window size
-#window_width, window_height = 16 * PIXEL_SIZE, 16 * PIXEL_SIZE
-resize = 3
+# window_width, window_height = 16 * PIXEL_SIZE, 16 * PIXEL_SIZE
 window = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption(f"py_icon (ver. {__version__})")
 window.fill((0, 0, 0))
@@ -76,8 +64,8 @@ window.fill((0, 0, 0))
 icon_data = np.zeros((icon_w, icon_h), dtype=bool)
  
 font_size = 18
-#font = pygame.font.SysFont(None, font_size)
 font = pygame.font.SysFont("Arial", font_size)
+#font = pygame.font.SysFont(None, font_size)
 
 def draw_text(text, x, y, col = COLOR): # Function to draw label/text
     text_surface = font.render(text, True, col)
@@ -122,18 +110,30 @@ def draw_edit_icon():
 
 
     rect_width, rect_height = 180, 320
+    xc2 = xc + 35
     pygame.draw.rect(window, BLACK2, (xc-5, y0, rect_width, rect_height))
     draw_text("CTRL + command:",xc, y0, COLOR2)
-    draw_text("C/F - Clear / Fill",xc, y0+fstep*1)
-    draw_text("R   - Resize 16/32", xc, y0+fstep*2)
-    draw_text("I   - Invert",xc, y0+fstep*3)
-    draw_text("N/B - Noise / Border",xc, y0+fstep*4)
-    draw_text("Z/X - Resize prew.",xc, y0+fstep*5)
-    draw_text("D   -  Data (export)", xc, y0+fstep*6)
-    draw_text("M   -  Matrix (add)",xc, y0+fstep*7)
-    draw_text("L/S -  Load / Save", xc, y0+fstep*8)
-    draw_text("Q   -  Quit", xc, y0+fstep*9)
+    
+    draw_text("C/F",xc, y0+fstep*1, COLOR2)
+    draw_text("Clear / Fill",xc2, y0+fstep*1)
+    draw_text("R", xc, y0+fstep*2, COLOR2)
+    draw_text("Resize 16/32", xc2, y0+fstep*2)
+    draw_text("I",xc, y0+fstep*3, COLOR2)
+    draw_text("Invert",xc2, y0+fstep*3)
+    draw_text("N/B",xc, y0+fstep*4, COLOR2)
+    draw_text("Noise / Border",xc2, y0+fstep*4)
+    draw_text("Z/X",xc, y0+fstep*5, COLOR2)
+    draw_text("Resize prew.",xc2, y0+fstep*5)
+    draw_text("T/M",xc, y0+fstep*6, COLOR2)
+    draw_text("Matrix (txt/add)",xc2, y0+fstep*6)
+    draw_text("E", xc, y0+fstep*7, COLOR2)
+    draw_text("Export (matrix)", xc2, y0+fstep*7)
+    draw_text("L/S", xc, y0+fstep*8, COLOR2)
+    draw_text("Load / Save", xc2, y0+fstep*8)
+    draw_text("Q", xc, y0+fstep*9, COLOR2)
+    draw_text("Quit", xc2, y0+fstep*9)
 
+    draw_text(f"T M S E / ...",x0, window_height-35, SILVER2)
 
     rect_width = 150
     pygame.draw.rect(window, SILVER, (window_width-rect_width-x0, y0, rect_width, rect_height))
@@ -248,12 +248,26 @@ def icon_border():
     for x in range(icon_w):
         icon_data[x][0] = 1
         icon_data[x][icon_h-1] = 1
-    
+
+
+def text_matrix_load(text_file=text_import): # icon or pattern/noise
+    my_txt_matrix = []
+    draw_status(f"text_matrix_load")
+    draw_status2(text_file)
+    with open(text_file, "r") as file:
+        lines = file.readlines()
+        for line in lines:
+            cleaned_line = line.strip()
+            #str_hex = bin_to_hex(str(cleaned_line),True,8)
+            my_txt_matrix.append(cleaned_line)
+    return my_txt_matrix
+
+            
 def matrix_icon():
     try:
         for y, row in enumerate(my_icon_matrix):
             for x, value in enumerate(row):
-                icon_data[x][15 - y] = True if value == '1' else False
+                icon_data[x][y] = True if value == '1' else False
     except:
         print("Err. Matrix")
 
@@ -279,6 +293,11 @@ def data_icon():
                 row += "0"
         my_icon_matrix_load.append(row)
         print(row)
+
+    if fdatetime:
+        dt = datetime.now().strftime("%Y%m%d_%H%M%S")
+        matrix_path = f"{path}matrix{icon_w}-{dt}.txt" 
+    draw_status2(matrix_path)       
 
     with open(matrix_path, "w") as file:
         for row in my_icon_matrix_load:
@@ -349,7 +368,7 @@ while running:
             elif event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 icon_clear()
 
-            elif event.key == pygame.K_d and pygame.key.get_mods() & pygame.KMOD_CTRL: # create save data matrix
+            elif event.key == pygame.K_e and pygame.key.get_mods() & pygame.KMOD_CTRL: # create save data matrix
                 data_icon()
 
             elif event.key == pygame.K_f and pygame.key.get_mods() & pygame.KMOD_CTRL:
@@ -366,6 +385,9 @@ while running:
 
             elif event.key == pygame.K_m and pygame.key.get_mods() & pygame.KMOD_CTRL: # import/load data matrix
                 matrix_icon()
+
+            elif event.key == pygame.K_t and pygame.key.get_mods() & pygame.KMOD_CTRL: # load txt data matrix
+                my_icon_matrix = text_matrix_load() # octopus / file param
 
             elif event.key == pygame.K_q and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 running = False
