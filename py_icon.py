@@ -8,23 +8,33 @@ import numpy as np
 import random
 from datetime import datetime
 
-__version__ = "0.1.5" # 2023/06
+__version__ = "0.1.6" # 2023/06
 
 DEBUG = True
 fdatetime = True # False
-icon_w, icon_h = 32, 32 #  32,32 / 16,16 / 16,32
+icon_w, icon_h = 32, 32 #  32,32 / 16,16 / 16,32 / 32,64 / 64,64
+I_W_MAX, I_H_MAX = 64,64
+
 path = "data_img/"
 image_path = f"{path}test_{icon_w}.bmp"
 matrix_path = f"{path}matrix{icon_w}.txt"
 text_import = f"{path}octopus.txt"
 
 # Size of pixels in the editor
-PIXEL_SIZE = 10
+pixel_size = 10
+if (icon_w + icon_h) > 65:
+    pixel_size = 5
+
+icon_array = np.zeros((I_W_MAX, I_H_MAX), dtype=np.uint8)
+# Initialize an empty icon
+icon_data = np.zeros((I_W_MAX, I_H_MAX), dtype=bool)
+
+# RGB colors      
 WHITE = (255, 255, 255)
 SILVER = (64, 64, 64)
 SILVER2 = (128, 128, 128)
-BLACK = (8, 8, 8)
-BLACK2 = (0, 0, 0)
+BLACK2 = (10, 10, 10)
+BLACK = (0, 0, 0)
 COLOR = (0, 128, 0)
 COLOR2 = (0, 196, 0)
 
@@ -34,7 +44,7 @@ window_width, window_height = 720, 480
 #    window_width = 720
 
 xc = window_width/2
-ic = (icon_w * PIXEL_SIZE + x0) // 2
+ic = (icon_w * pixel_size + x0) // 2
 fstep = 23
 resize = 3
 input_text = ""
@@ -55,13 +65,10 @@ my_icon_matrix = [
 pygame.init()
 
 # Window size
-# window_width, window_height = 16 * PIXEL_SIZE, 16 * PIXEL_SIZE
+# window_width, window_height = 16 * pixel_size, 16 * pixel_size
 window = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption(f"py_icon (ver. {__version__})")
-window.fill((0, 0, 0))
-
-# Initialize an empty icon
-icon_data = np.zeros((icon_w, icon_h), dtype=bool)
+window.fill(BLACK)
  
 font_size = 18
 font = pygame.font.SysFont("Arial", font_size)
@@ -73,45 +80,43 @@ def draw_text(text, x, y, col = COLOR): # Function to draw label/text
 
 
 def draw_status(text, x=30, y=390):
-    pygame.draw.rect(window, (10, 10, 10), (x-5, y-5, xc-50, 29))
+    pygame.draw.rect(window, BLACK2, (x-5, y-5, xc-50, 29))
     text_surface = font.render(str(text), True, COLOR2)
     window.blit(text_surface, (x, y))
-    pygame.display.flip()
 
 
 def draw_status2(text, x=xc, y=390):
-    pygame.draw.rect(window, (10, 10, 10), (x-5, y-5, xc-50, 29))
+    pygame.draw.rect(window, BLACK2, (x-5, y-5, xc-50, 29))
     text_surface = font.render(str(text), True, COLOR2)
     window.blit(text_surface, (x, y))
-    pygame.display.flip()
 
 
 def draw_input_field():
     draw_text("New filename:",xc, y0+fstep*11, COLOR2)
     pygame.draw.rect(window, SILVER, (xc, y0+fstep*12, 170, 27))
-    pygame.draw.rect(window, BLACK, (xc, y0+fstep*12, 170, 27), 2)
+    pygame.draw.rect(window, BLACK2, (xc, y0+fstep*12, 170, 27), 2)
     text_surface = font.render(input_text, True, BLACK)
     window.blit(text_surface, (xc+5, y0+fstep*12+3))
 
 
 def draw_edit_icon():
-    pygame.draw.rect(window, BLACK2, (0, 0, window_width, 390))
+    pygame.draw.rect(window, BLACK, (0, 0, window_width, 390))
     draw_text(f"icon {icon_w}x{icon_h}",x0, y0 -30, SILVER2)
     # window.fill((255, 255, 255))  # Clear the window content
     
     for y in range(icon_h):
         for x in range(icon_w):
             if icon_data[x][y]: # 15-y ???
-                pygame.draw.rect(window, (0, 0, 0), (x0 + x * PIXEL_SIZE, y0 + y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE))
+                pygame.draw.rect(window, (0, 0, 0), (x0 + x * pixel_size, y0 + y * pixel_size, pixel_size, pixel_size))
             else:
-                pygame.draw.rect(window, (255, 255, 255), (x0 + x * PIXEL_SIZE, y0 + y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE))
+                pygame.draw.rect(window, (255, 255, 255), (x0 + x * pixel_size, y0 + y * pixel_size, pixel_size, pixel_size))
 
-    pygame.draw.rect(window, (0, 128, 255), (x0, y0, icon_w * PIXEL_SIZE, icon_h * PIXEL_SIZE), 2)
+    pygame.draw.rect(window, (0, 128, 255), (x0, y0, icon_w * pixel_size, icon_h * pixel_size), 2)
 
 
     rect_width, rect_height = 180, 320
     xc2 = xc + 35
-    pygame.draw.rect(window, BLACK2, (xc-5, y0, rect_width, rect_height))
+    pygame.draw.rect(window, BLACK, (xc-5, y0, rect_width, rect_height))
     draw_text("CTRL + command:",xc, y0, COLOR2)
     
     draw_text("C/F",xc, y0+fstep*1, COLOR2)
@@ -150,17 +155,17 @@ def draw_edit_icon():
         draw_status(f"Err. {image_path}")
 
     draw_input_field()
-
     pygame.display.flip()
 
 
 def icon_mode(mode,icon_w,icon_h):
     mode += 1
-    if mode > 2: 
+    if mode > 3: 
         mode = 1
-    
-    if mode == 2: icon_w, icon_h = 16,16
+        
     if mode == 1: icon_w, icon_h = 32,32
+    if mode == 2: icon_w, icon_h = 16,16
+    if mode == 3: icon_w, icon_h = 64,64
     draw_status(f"Mode > {mode}: {icon_w}x{icon_h}")
 
     return mode, icon_w, icon_h
@@ -182,6 +187,8 @@ def load_icon():
         #icon_array = pygame.surfarray.array2d(icon_surface)
         icon_array = pygame.surfarray.pixels2d(icon_surface)
         icon_array = np.asarray(icon_array, dtype=np.uint8)
+        if DEBUG:
+            print(icon_array)
 
         # Set the values in the editor icon based on the data array
         for y in range(icon_h):
@@ -197,7 +204,7 @@ def load_icon():
 def save_icon():
     draw_status(f"save")
     # Create an empty array for the icon
-    icon_array = np.zeros((icon_w, icon_h), dtype=np.uint8)
+    #icon_array = np.zeros((icon_w, icon_h), dtype=np.uint8)
 
     # Set the values in the icon array based on the data in the editor icon
     for y in range(icon_h):
@@ -220,22 +227,22 @@ def icon_clear():
 
 def icon_fill():
     draw_status(f"fill > 1")
-    for y in range(icon_w):
-        for x in range(icon_h):
+    for y in range(icon_h):
+        for x in range(icon_w):
             icon_data[x][y] = True
 
 
 def icon_invert():
     draw_status(f"invert 0<->1")
-    for y in range(icon_w):
-        for x in range(icon_h):
+    for y in range(icon_h):
+        for x in range(icon_w):
             icon_data[x][y] ^= True
 
 
 def icon_noise():
     draw_status(f"noise")
-    for y in range(icon_w):
-        for x in range(icon_h):
+    for y in range(icon_h):
+        for x in range(icon_w):
             icon_data[x][y] = random.randint(0, 1) # True
 
 
@@ -250,11 +257,11 @@ def icon_border():
         icon_data[x][icon_h-1] = 1
 
 
-def text_matrix_load(text_file=text_import): # icon or pattern/noise
+def text_matrix_load(matrix_file=text_import): # icon or pattern/noise
     my_txt_matrix = []
     draw_status(f"text_matrix_load")
-    draw_status2(text_file)
-    with open(text_file, "r") as file:
+    draw_status2(matrix_file)
+    with open(matrix_file, "r") as file:
         lines = file.readlines()
         for line in lines:
             cleaned_line = line.strip()
@@ -318,8 +325,8 @@ while running:
                 mouse_x, mouse_y = event.pos
 
                 # Convert the coordinates to pixel position in the matrix
-                pixel_x = (mouse_x - x0) // PIXEL_SIZE 
-                pixel_y = (mouse_y - y0) // PIXEL_SIZE
+                pixel_x = (mouse_x - x0) // pixel_size 
+                pixel_y = (mouse_y - y0) // pixel_size
                 draw_status(f"x:{pixel_x} | y:{pixel_y} > 1")
 
                 try:
@@ -333,8 +340,8 @@ while running:
                 mouse_x, mouse_y = event.pos
 
                 # Convert the coordinates to pixel position in the matrix
-                pixel_x = (mouse_x - x0) // PIXEL_SIZE 
-                pixel_y = (mouse_y - y0) // PIXEL_SIZE
+                pixel_x = (mouse_x - x0) // pixel_size 
+                pixel_y = (mouse_y - y0) // pixel_size
                 draw_status(f"x:{pixel_x} | y:{pixel_y} > 0")
 
                 try:
@@ -352,6 +359,13 @@ while running:
             
             elif event.key == pygame.K_r and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 mode,icon_w,icon_h = icon_mode(mode,icon_w,icon_h)
+                if (icon_w + icon_h) > 65:
+                    pixel_size = 5 
+                else:
+                    pixel_size = 10
+                image_path = f"{path}test_{icon_w}.bmp"
+                matrix_path = f"{path}matrix{icon_w}.txt"
+                draw_status2(f"zoom {image_path}")
 
             elif event.key == pygame.K_z and pygame.key.get_mods() & pygame.KMOD_CTRL:
                 resize += 1
@@ -395,7 +409,7 @@ while running:
             elif event.key == pygame.K_RETURN:
                 # after Enter
                 draw_status(f"input text: {input_text}")
-                if len(input_text)>2:
+                if len(input_text) > 1:
                     new_file = f"{path}{input_text}_{icon_w}.bmp"
                     draw_status2(new_file)
                     image_path = new_file
