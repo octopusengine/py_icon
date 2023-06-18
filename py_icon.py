@@ -8,7 +8,7 @@ import numpy as np
 import random
 from datetime import datetime
 
-__version__ = "0.1.7" # 2023/06
+__version__ = "0.2.0" # 2023/06
 
 DEBUG = True
 fdatetime = True # False
@@ -17,9 +17,11 @@ I_W_MAX, I_H_MAX = 64,64
 
 path = "data_img/"
 image_path = f"{path}test_{icon_w}.bmp"
-matrix_path = f"{path}matrix{icon_w}.txt"
+matrix_name = "mx_test"
 text_import_g = f"{path}octopus.txt"
-text_import_d = f"{path}data_noise.txt"
+#text_import_d = f"{path}data_noise.txt"
+text_import_d = f"{path}data_horse_noise.txt"
+mouse_button_pressed = False
 
 # Size of pixels in the editor
 pixel_size = 10
@@ -27,7 +29,6 @@ if (icon_w + icon_h) > 65:
     pixel_size = 5
 
 icon_array = np.zeros((I_W_MAX, I_H_MAX), dtype=np.uint8)
-# Initialize an empty icon
 icon_data = np.zeros((I_W_MAX, I_H_MAX), dtype=bool)
 
 # RGB colors      
@@ -41,8 +42,6 @@ COLOR2 = (0, 196, 0)
 
 x0, y0 = 30, 50
 window_width, window_height = 800, 480
-#if icon_w > 31:
-#    window_width = 720
 
 xc = window_width/2 - 30
 ic = (icon_w * pixel_size + x0) // 2
@@ -52,28 +51,43 @@ input_text = ""
 mode = 1
 my_icon_matrix_load = []
 
-# test matrix
-matrix_txt = [
-"10000000000000010000000000000001",
-"01000000000000010000000000000010",
-"00100000000000010000000000000100",
-"00010000000000010000000000001000",
-"00001000000000010000000000010000",
-]
+# test add_matrix
+add_bin_txt = """10000001000000000000111000000001
+01000001000000000000100100000010
+00100001000000000000101100000100
+00010001000000000000110000001000
+00001001000000000000101000010000
+00000101111000000000100100100000
+"""
 # ...
 
+matrix_txt = []
+for line in add_bin_txt.splitlines():
+    matrix_txt.append(line)
+
+print(matrix_txt)
 
 p.init()
 
-# Window size
 # window_width, window_height = 16 * pixel_size, 16 * pixel_size
 window = p.display.set_mode((window_width, window_height))
 p.display.set_caption(f"py_icon (ver. {__version__})")
-window.fill(BLACK)
- 
+# window.fill(BLACK)
+
 font_size = 18
 font = p.font.SysFont("Arial", font_size)
 #font = p.font.SysFont(None, font_size)
+
+
+def rename_matrix_path(basic="basic"):
+    if fdatetime:
+        dt = datetime.now().strftime("%Y%m%d_%H%M%S")
+        matrix_path = f"{path}_mx_{basic}_{icon_w}-{dt}.txt" 
+    else:
+        matrix_path = f"{path}_mx_{basic}_{icon_w}.txt"
+    return matrix_path
+
+matrix_path = rename_matrix_path("test")
 
 def draw_text(text, x, y, col = COLOR): # Function to draw label/text
     text_surface = font.render(text, True, col)
@@ -87,6 +101,7 @@ def draw_status(text, x=30, y=390):
 
 
 def draw_status2(text, x=xc, y=390):
+    print("status2:", text)
     p.draw.rect(window, BLACK2, (x-5, y-5, xc-50, 29))
     text_surface = font.render(str(text), True, COLOR2)
     window.blit(text_surface, (x, y))
@@ -102,7 +117,7 @@ def draw_input_field():
 
 def draw_edit_icon():
     p.draw.rect(window, BLACK, (0, 0, window_width, 390))
-    draw_text(f"icon {icon_w}x{icon_h}",x0, y0 -30, SILVER2)
+    draw_text(f"icon {icon_w}x{icon_h} - {image_path}",x0, y0 -30, SILVER2)
     # window.fill((255, 255, 255))  # Clear the window content
     
     for y in range(icon_h):
@@ -113,7 +128,6 @@ def draw_edit_icon():
                 p.draw.rect(window, (255, 255, 255), (x0 + x * pixel_size, y0 + y * pixel_size, pixel_size, pixel_size))
 
     p.draw.rect(window, (0, 128, 255), (x0, y0, icon_w * pixel_size, icon_h * pixel_size), 2)
-
 
     rect_width, rect_height = 180, 320
     xc2 = xc + 35
@@ -141,7 +155,7 @@ def draw_edit_icon():
     draw_text("Q", xc, y0+fstep*10, COLOR2)
     draw_text("Quit", xc2, y0+fstep*10)
 
-    draw_text(f"T M S E / ...",x0, window_height-35, SILVER2)
+    # draw_text(f"R D/G/A S E / ...",x0, window_height-35, SILVER2)
 
     rect_width = 220
     p.draw.rect(window, SILVER, (window_width-rect_width-x0, y0, rect_width, rect_height))
@@ -151,8 +165,8 @@ def draw_edit_icon():
         icon_saved = p.image.load(image_path)
         original_width, original_height = icon_saved.get_size()
         current_width, current_height = original_width * resize, original_height * resize
-        window.blit(icon_saved, (window_width-rect_width-10, y0+10))
-        window.blit(icon_saved, (window_width-rect_width+100, y0+10))
+        window.blit(icon_saved, (window_width-rect_width-8, y0+15))
+        window.blit(icon_saved, (window_width-rect_width+100, y0+15))
         window.blit(p.transform.scale(icon_saved, (current_width, current_height)), (window_width-rect_width-10, y0+fstep*5))
     except:
         draw_status(f"Err. {image_path}")
@@ -165,7 +179,6 @@ def icon_mode(mode,icon_w,icon_h):
     mode += 1
     if mode > 3: 
         mode = 1
-        
     if mode == 1: icon_w, icon_h = 32,32
     if mode == 2: icon_w, icon_h = 16,16
     if mode == 3: icon_w, icon_h = 64,64
@@ -194,12 +207,10 @@ def load_icon():
         #  icon_surface = p.transform.flip(icon_surface, False, True)  # Horizontal flip (for correct orientation)
 
         # Convert the icon to a data array
-        #icon_array = p.surfarray.array2d(icon_surface)
-        icon_array = p.surfarray.pixels2d(icon_surface)
+        icon_array = p.surfarray.pixels2d(icon_surface) # p.surfarray.array2d(icon_surface)
         icon_array = np.asarray(icon_array, dtype=np.uint8)
-        
-        ##if DEBUG:
-        ##    print(icon_array)
+        # if DEBUG:
+        #    print(icon_array)
 
         # Set the values in the editor icon based on the data array
         for y in range(icon_h):
@@ -214,16 +225,15 @@ def load_icon():
 
 def save_icon():
     draw_status(f"save")
-    # Create an empty array for the icon
-    #icon_array = np.zeros((icon_w, icon_h), dtype=np.uint8)
-
+    
     # Set the values in the icon array based on the data in the editor icon
     for y in range(icon_h):
         for x in range(icon_w):
             icon_array[x][y] = 0 if icon_data[x][y] else 255
 
     # Create a surface for the icon and rotate it 180 degrees (upside down)
-    icon_surface = p.surfarray.make_surface(icon_array)
+    icon_surface = p.surfarray.make_surface(icon_array[:icon_w, :icon_h])
+    # exported_array = icon_array[:32, :32]
     #icon_surface = p.transform.flip(icon_surface, False, True)
 
     # Save the icon to a file
@@ -301,39 +311,46 @@ def matrix_icon(offset):
         print("Err. Matrix")
 
 
-def data_icon():
+def icon_export():
     draw_status(f"create and save binary data matrix")
     # Load the icon from a file
-    icon_surface = p.image.load(image_path)
-
-    # Convert the icon to a data array
-    icon_array = p.surfarray.array2d(icon_surface)
-    icon_array = np.asarray(icon_array, dtype=np.uint8)
+    if os.path.exists(image_path):
+        size = os.path.getsize(image_path)
+        draw_status2(f"{image_path} ({size} Bytes)")
     
+        icon_surface = p.image.load(image_path)
 
-    # Iterate over rows and columns of the icon
-    for y in range(icon_array.shape[1]):
-        row = ""
-        for x in range(icon_array.shape[0]):
-            value = icon_array[x][y]
-            if value < 128:
-                row += "1"
-            else:
-                row += "0"
-        my_icon_matrix_load.append(row)
-        print(row)
+        # Convert the icon to a data array
+        icon_array = p.surfarray.array2d(icon_surface)
+        icon_array = np.asarray(icon_array, dtype=np.uint8)
+        # exported_array = icon_array[:32, :32]
 
-    if fdatetime:
-        dt = datetime.now().strftime("%Y%m%d_%H%M%S")
-        matrix_path = f"{path}matrix{icon_w}-{dt}.txt" 
-    draw_status2(matrix_path)       
+        # Iterate over rows and columns of the icon
+        for y in range(icon_h): # icon_array.shape[1]
+            row = ""
+            for x in range(icon_w): # icon_array.shape[0]
+                value = icon_array[x][y]
+                if value < 128:
+                    row += "1"
+                else:
+                    row += "0"
+            my_icon_matrix_load.append(row)
+            print(row)
+        
+        draw_status2(matrix_path)       
+    else:    
+        draw_status2(f"The file does not exist.")
 
     with open(matrix_path, "w") as file:
         for row in my_icon_matrix_load:
             file.write(row + "\n")
 
 
-# =================== main loop ===============================
+# =================== start / and main loop ===============================
+p.draw.rect(window, BLACK, (0, 0, window_width, window_height))
+p.display.flip()
+draw_text(f"R D/G/A S E / ...",x0, window_height-35, SILVER2)
+
 running = True
 draw_status(f"Start > {image_path}")
 
@@ -341,9 +358,27 @@ while running:
     for event in p.event.get():
         if event.type == p.QUIT:
             running = False
+        elif event.type == p.MOUSEMOTION:
+            if mouse_button_pressed:
+                # Get the mouse coordinates
+                mouse_x, mouse_y = event.pos
+
+                # Convert the coordinates to pixel position in the matrix
+                pixel_x = (mouse_x - x0) // pixel_size 
+                pixel_y = (mouse_y - y0) // pixel_size
+                draw_status(f"x:{pixel_x} | y:{pixel_y} > 0")
+
+                try:
+                    icon_data[pixel_x][pixel_y] = True
+                except:
+                    print("out of range")
+
+                draw_edit_icon()
+        
         elif event.type == p.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left mouse button
                 # Get the click coordinates
+                mouse_button_pressed = True
                 mouse_x, mouse_y = event.pos
 
                 # Convert the coordinates to pixel position in the matrix
@@ -372,6 +407,10 @@ while running:
                     print("out of range")
                 draw_edit_icon()
 
+        elif event.type == p.MOUSEBUTTONUP:
+            if event.button == 1:  # Left mouse button
+                mouse_button_pressed = False
+
         elif event.type == p.KEYDOWN:
             if event.key == p.K_l and p.key.get_mods() & p.KMOD_CTRL:
                 load_icon()
@@ -386,8 +425,9 @@ while running:
                 else:
                     pixel_size = 10
                 image_path = f"{path}test_{icon_w}.bmp"
-                matrix_path = f"{path}matrix{icon_w}.txt"
                 draw_status2(f"zoom {image_path}")
+                matrix_path = rename_matrix_path()
+                print(matrix_path)
 
             elif event.key == p.K_z and p.key.get_mods() & p.KMOD_CTRL:
                 resize += 1
@@ -405,7 +445,7 @@ while running:
                 icon_clear()
 
             elif event.key == p.K_e and p.key.get_mods() & p.KMOD_CTRL: # create save data matrix
-                data_icon()
+                icon_export()
 
             elif event.key == p.K_f and p.key.get_mods() & p.KMOD_CTRL:
                 icon_fill()
@@ -442,6 +482,8 @@ while running:
                     new_file = f"{path}{input_text}_{icon_w}.bmp"
                     draw_status2(new_file)
                     image_path = new_file
+                    matrix_path = rename_matrix_path(input_text)
+                    print(matrix_path)
                 input_text = ""
             elif event.key == p.K_BACKSPACE:
                 # del last char
