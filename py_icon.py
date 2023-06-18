@@ -8,7 +8,7 @@ import numpy as np
 import random
 from datetime import datetime
 
-__version__ = "0.2.0" # 2023/06
+__version__ = "0.2.1" # 2023/06
 
 DEBUG = True
 fdatetime = True # False
@@ -20,7 +20,8 @@ image_path = f"{path}test_{icon_w}.bmp"
 matrix_name = "mx_test"
 text_import_g = f"{path}octopus.txt"
 #text_import_d = f"{path}data_noise.txt"
-text_import_d = f"{path}data_horse_noise.txt"
+text_import_d = f"{path}data_noise64.txt"
+#text_import_d = f"{path}data_horse_noise.txt"
 mouse_button_pressed = False
 
 # Size of pixels in the editor
@@ -52,7 +53,7 @@ mode = 1
 my_icon_matrix_load = []
 
 # test add_matrix
-add_bin_txt = """10000001000000000000111000000001
+add_bin_txt32 = """10000001000000000000111000000001
 01000001000000000000100100000010
 00100001000000000000101100000100
 00010001000000000000110000001000
@@ -60,6 +61,14 @@ add_bin_txt = """10000001000000000000111000000001
 00000101111000000000100100100000
 """
 # ...
+add_bin_txt="""0110101101101111011000100111100101101100011000010010000001101101
+1111110011000110001001011001010100000001100100110010101001110101
+1010011010011100111011111011000011001000101011001101110010110011
+0100000110000110100110000000100011111100000111100101011100010100
+0001101001001100101111100101111101110011000100010011010001001000
+"""
+
+
 
 matrix_txt = []
 for line in add_bin_txt.splitlines():
@@ -117,7 +126,7 @@ def draw_input_field():
 
 def draw_edit_icon():
     p.draw.rect(window, BLACK, (0, 0, window_width, 390))
-    draw_text(f"icon {icon_w}x{icon_h} - {image_path}",x0, y0 -30, SILVER2)
+    draw_text(f"icon {icon_w}x{icon_h} | {image_path}",x0, y0 -30, SILVER2)
     # window.fill((255, 255, 255))  # Clear the window content
     
     for y in range(icon_h):
@@ -299,16 +308,20 @@ def matrix_text_load(matrix_file): # icon or pattern/noise
     return my_txt_matrix
 
             
-def matrix_icon(offset):
+def matrix_icon(offset=False):
     xx, yy = 0 , 0
     if icon_w == 64 and offset:
         xx, yy = 16 , 16  # 32 to 64 - offset: 16
     try:
         for y, row in enumerate(my_icon_matrix):
             for x, value in enumerate(row):
-                icon_data[x+xx][y+yy] = True if value == '1' else False
-    except:
-        print("Err. Matrix")
+                try:
+                    icon_data[x+xx][y+yy] = True if value == '1' else False
+                except Exception as e:
+                    print(f"Err. {x},{y} - {e}")
+    except Exception as e:
+        print(offset,my_icon_matrix)
+        print(f"Err. Matrix: {e}")
 
 
 def icon_export():
