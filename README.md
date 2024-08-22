@@ -6,4 +6,14 @@ Simple icon editor (Pygame)
 
 ---
 
+## install
+
+```
+git clone https://github.com/octopusengine/py_icon.git
+cd py_icon
+python3 -m venv venv  
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
 MIT
